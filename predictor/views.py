@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 import torch
 import base64
-import gdown
+import gdown # type: ignore
 from io import BytesIO
 import torchvision.transforms as transforms
 from facenet_pytorch import MTCNN
