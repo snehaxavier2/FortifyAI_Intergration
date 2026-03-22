@@ -1,4 +1,5 @@
-venv/ 
-*/venv/ 
-__pycache__/ 
-*.pyc 
+echo venv/ >> .gitignore
+echo *.pth >> .gitignore
+echo __pycache__/ >> .gitignore
+echo *.pyc >> .gitignore
+echo filelist.txt >> .gitignore
