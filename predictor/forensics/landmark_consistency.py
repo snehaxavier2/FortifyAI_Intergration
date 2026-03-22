@@ -25,11 +25,13 @@ def compute_landmark_consistency(face_img_rgb):
     return symmetry_diff
 
 
-def interpret_landmark(score):
-    if score < 5:
+def interpret_landmark(score: float):
+    if score < 20:
         return "Facial geometry appears natural"
-    elif score < 15:
-        return "Minor facial symmetry inconsistencies"
+    elif score < 45:
+        return "Minor facial symmetry variations detected"
+    elif score < 70:
+        return "Notable landmark inconsistencies detected"
     else:
         return "Strong facial landmark inconsistencies detected"
 

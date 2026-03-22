@@ -12,31 +12,19 @@ _CACHED_TARGET_LAYER = None
 
 
 def _get_target_layer(model):
-    backbone   = model.backbone
-    candidates = [
-        ("act2",      "After BN + SiLU — sharpest CAMs"),
-        ("bn2",       "After BatchNorm — good CAMs"),
-        ("conv_head", "Pre-activation — fallback"),
-    ]
-    for attr, desc in candidates:
+    backbone = model.backbone    
+    try:
+        layer = backbone.blocks[5]
+        print("[GradCAM] Target layer: backbone.blocks[5] (14×14 spatial — best resolution)")
+        return layer
+    except (AttributeError, IndexError):
+        pass    
+    for attr, desc in [("act2","After BN+SiLU"), ("bn2","After BatchNorm"), ("conv_head","Pre-activation")]:
         if hasattr(backbone, attr):
-            layer = getattr(backbone, attr)
             print(f"[GradCAM] Target layer: backbone.{attr} ({desc})")
-            return layer
-
-    print("[GradCAM] WARNING: Known layers not found. Using last Conv2d.")
-    last_conv = None
-    for _, module in backbone.named_modules():
-        if isinstance(module, torch.nn.Conv2d):
-            last_conv = module
-    if last_conv is not None:
-        return last_conv
-
-    raise RuntimeError(
-        "[GradCAM] No suitable target layer found.\n"
-        "Run: print([n for n, _ in model.backbone.named_children()])"
-    )
-
+            return getattr(backbone, attr)
+    
+    raise RuntimeError("[GradCAM] No suitable target layer found.")
 
 def denormalize(tensor):
     mean = torch.tensor([0.485, 0.456, 0.406], device=tensor.device).view(3, 1, 1)
@@ -122,8 +110,6 @@ class GradCAM:
 
         weights = torch.mean(self.gradients, dim=(2, 3), keepdim=True)
         cam     = F.relu(torch.sum(weights * self.activations, dim=1))
-
-        # v5: upsample to 224×224 (was 128×128)
         cam = F.interpolate(
             cam.unsqueeze(1),
             size=(INPUT_SIZE, INPUT_SIZE),
@@ -141,29 +127,25 @@ class GradCAM:
         return cam, score.item(), rgb_tensor
 
 
-def overlay_heatmap(original_image, cam, alpha=0.3):
-    cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-8)
-    heatmap = cv2.applyColorMap(np.uint8(255 * cam), cv2.COLORMAP_JET)
-    heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
-    overlay = cv2.addWeighted(
-        original_image.astype(np.uint8),
-        0.7,
-        heatmap.astype(np.uint8),
-        0.3,
-        0
-    )
-    return overlay
+def overlay_heatmap(original_image, cam, alpha=0.5):
+    cam_smooth = cv2.GaussianBlur(cam.astype(np.float32), (15, 15), 0)    
+    cam_min, cam_max = cam_smooth.min(), cam_smooth.max()
+    if cam_max - cam_min > 1e-8:
+        cam_smooth = (cam_smooth - cam_min) / (cam_max - cam_min)
+    
+    heatmap = cv2.applyColorMap(np.uint8(255 * cam_smooth), cv2.COLORMAP_JET)
+    heatmap  = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
+    overlay  = (alpha * heatmap.astype(np.float32)
+                + (1 - alpha) * original_image.astype(np.float32))
+    return np.clip(overlay, 0, 255).astype(np.uint8)
 
 def predict_with_gradcam(model, rgb_tensor, threshold=None):    
     global _CACHED_TARGET_LAYER
-
     if threshold is None:
         threshold = THRESHOLD
 
     device     = next(model.parameters()).device
     rgb_tensor = rgb_tensor.to(device)
-
-    # ── Probability ───────────────────────────────────────────────────────
     if TTA_ENABLED:
         probability = _tta_probability(model, rgb_tensor)
     else:
@@ -177,8 +159,6 @@ def predict_with_gradcam(model, rgb_tensor, threshold=None):
 
     gradcam_obj = GradCAM(model, _CACHED_TARGET_LAYER)
     cam, _, rgb_tensor = gradcam_obj.generate(rgb_tensor)
-
-    # ── Reconstruct original image at 224×224 ─────────────────────────────
     rgb_denorm = denormalize(rgb_tensor.squeeze(0).detach())
     original   = (rgb_denorm.permute(1, 2, 0).detach().cpu().numpy() * 255).astype(np.uint8)
     overlay    = overlay_heatmap(original, cam)

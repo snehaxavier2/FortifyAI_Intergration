@@ -52,9 +52,11 @@ def compute_upsampling_score(freq_map: np.ndarray):
 
 
 def interpret_upsampling(score: float):
-    if score < 1.5:
-        return "No GAN upsampling artifacts detected"
-    elif score < 3.0:
+    if score < 3.0:
+        return "No significant upsampling artifacts"
+    elif score < 8.0:
+        return "Minor upsampling variations detected"
+    elif score < 15.0:
         return "Possible GAN upsampling artifacts detected"
     else:
         return "Strong GAN upsampling artifacts detected"
