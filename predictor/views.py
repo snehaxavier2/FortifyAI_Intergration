@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 import torch
 import base64
+import gdown
 from io import BytesIO
 import torchvision.transforms as transforms
 from facenet_pytorch import MTCNN
@@ -23,32 +24,33 @@ from .forensics.landmark_consistency import analyse_landmark_consistency
 from .forensics.texture_glcm import analyse_texture_glcm
 from .forensics.fusion import compute_forensic_score, final_forensic_decision
 
-# Model loading 
+# Model path
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "best_model.pth")
 
+# Auto-download weights if missing
+if not os.path.exists(MODEL_PATH):
+    print("[FortifyAI v5] Downloading model weights...")
+    gdown.download(
+        "https://drive.google.com/uc?id=1QUqVIArl6BbgEJ-ihUKBs-9Kp7vnYeq2",
+        MODEL_PATH,
+        quiet=False
+    )
+
+# Model loading
 def _load_model():
-    checkpoint_path = getattr(settings, "FORTIFYAI_CHECKPOINT", None)
-
-    if not checkpoint_path:
-        raise RuntimeError(
-            "FORTIFYAI_CHECKPOINT is not set in settings.py. "
-            "Add: FORTIFYAI_CHECKPOINT = r'C:\\path\\to\\best_model.pth'"
-        )
-    if not os.path.exists(checkpoint_path):
+    if not os.path.exists(MODEL_PATH):
         raise FileNotFoundError(
-            f"Checkpoint not found: {checkpoint_path}\n"
-            "Check FORTIFYAI_CHECKPOINT in settings.py."
+            f"Model weights not found at {MODEL_PATH}\n"
+            "Check your Google Drive link or place best_model.pth manually."
         )
-
-    device     = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model      = HybridModel(pretrained=False).to(device)
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = HybridModel(pretrained=False).to(device)
+    checkpoint = torch.load(MODEL_PATH, map_location=device)
     model.load_state_dict(checkpoint["model_state"])
     model.eval()
-
-    print(f"[FortifyAI v5] Model loaded: {checkpoint_path}")
+    print(f"[FortifyAI v5] Model loaded: {MODEL_PATH}")
     print(f"[FortifyAI v5] Device: {device}")
     return model
-
 
 MODEL = _load_model()
 # Preprocessing 

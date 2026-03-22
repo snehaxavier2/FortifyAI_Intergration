@@ -1,5 +1,13 @@
-echo venv/ >> .gitignore
-echo *.pth >> .gitignore
-echo __pycache__/ >> .gitignore
-echo *.pyc >> .gitignore
-echo filelist.txt >> .gitignore
+notepad .gitignore
+```
+
+**Clear everything** and type this manually (no spaces, no extra characters):
+```
+venv/
+*.pth
+*.pyc
+__pycache__/
+*.sqlite3
+media/
+*.log
+db.sqlite3
