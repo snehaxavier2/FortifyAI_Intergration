@@ -89,20 +89,34 @@ def compute_forensic_score(
 
 
 def final_forensic_decision(score):
-    if score > 70:
-        label       = "DEEPFAKE"
+    if score > 75:
+        label       = "FAKE"
+        strength    = "Very High"
         reliability = "HIGH"
         confidence  = round(score, 2)
+
+    elif score > 60:
+        label       = "FAKE"
+        strength    = "High"
+        reliability = "HIGH"
+        confidence  = round(score, 2)
+
     elif score > 42:
-        label       = "GAN-GENERATED"
+        label       = "FAKE"
+        strength    = "Moderate"
         reliability = "MEDIUM"
         confidence  = round(score, 2)
+
     elif score > 30:
         label       = "AUTHENTIC"
+        strength    = "Moderate"
         reliability = "MEDIUM"
         confidence  = round(100 - score, 2)
+
     else:
         label       = "AUTHENTIC"
+        strength    = "High"
         reliability = "HIGH"
         confidence  = round(100 - score, 2)
-    return label, confidence, reliability
+
+    return label, confidence, reliability, strength

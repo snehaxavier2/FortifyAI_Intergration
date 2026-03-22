@@ -185,7 +185,6 @@ def predict(request):
     # Debug log
     print(f"[FortifyAI v5] prob={probability:.6f} | pred={prediction} | face={face_detected}")
 
-    # Confidence — always reflects certainty in the label returned
     raw_confidence = probability if prediction == 1 else (1 - probability)
     confidence     = round(raw_confidence * 100, 1)
 #    if confidence >= 80:
@@ -195,11 +194,7 @@ def predict(request):
 #    else:
 #        detection_reliability = "LOW CONFIDENCE"
 #    label       = "DEEPFAKE" if prediction == 1 else "AUTHENTIC"
-    explanation = (
-        "Manipulated facial regions detected via spectral artifact analysis."
-        if prediction == 1
-        else "No manipulation artifacts detected. Natural facial patterns confirmed."
-    )    
+    
 
     forensic_score = compute_forensic_score(
         confidence,
@@ -212,33 +207,35 @@ def predict(request):
         metadata,
         ai_prediction=prediction
     )
-    final_label, forensic_score, reliability = final_forensic_decision(forensic_score)
-#    if prediction == 0 and confidence > 70:
-#        label = "AUTHENTIC"
-#        detection_reliability = "HIGH"
-#    else:
-    label = final_label
-    confidence = round(forensic_score, 2)
+    final_label, final_score, reliability, strength = final_forensic_decision(forensic_score)
+    if final_label == "FAKE":
+        explanation = "Manipulation or AI synthesis artifacts detected across multiple forensic channels."
+    else:
+        explanation = "No manipulation artifacts detected. Natural facial patterns confirmed."
+
+    label                = final_label
+    confidence           = round(forensic_score, 2)
     detection_reliability = reliability
 
     saved_path  = _save_gradcam(overlay)
 
     response_data = {
-        "prediction":    label,
-        "confidence":    confidence,
-        "detection_reliability":  detection_reliability,
-        "sha256_hash":   file_hash,
-        "metadata"   :   metadata,
-        "explanation":   explanation,
-        "gradcam_artifact":   saved_path,
-        "ela_score"  :   ela_score,
-        "ela_interpretation": ela_interpretation,
-        "ela_artifact" : ela_path,
-        "sensor_noise":  sensor_noise, 
-        "upsampling_analysis": upsampling,
-        "landmark_analysis": landmark,
-        "texture_analysis": texture,
-        "face_detected": face_detected,
+        "prediction":            label,
+        "confidence":            final_score,
+        "detection_strength":    strength,
+        "detection_reliability": detection_reliability,
+        "sha256_hash":           file_hash,
+        "metadata":              metadata,
+        "explanation":           explanation,
+        "gradcam_artifact":      saved_path,
+        "ela_score":             ela_score,
+        "ela_interpretation":    ela_interpretation,
+        "ela_artifact":          ela_path,
+        "sensor_noise":          sensor_noise,
+        "upsampling_analysis":   upsampling,
+        "landmark_analysis":     landmark,
+        "texture_analysis":      texture,
+        "face_detected":         face_detected,
     }
     if saved_path:
         response_data["saved_path"] = saved_path
