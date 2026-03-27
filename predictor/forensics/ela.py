@@ -2,7 +2,6 @@ import io
 import os
 import numpy as np
 from PIL import Image, ImageChops, ImageEnhance
-import base64
 from datetime import datetime
 
 def perform_ela(image_pil, quality=90):

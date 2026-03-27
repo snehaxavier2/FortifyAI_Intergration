@@ -3,7 +3,6 @@ import datetime
 import cv2
 import numpy as np
 import torch
-import base64
 import gdown # type: ignore
 from io import BytesIO
 import torchvision.transforms as transforms
@@ -103,12 +102,6 @@ def _detect_and_crop_face(img_rgb: np.ndarray):
             return face_crop, True
     return img_rgb, False
 
-# Encode input face crop for debugging — confirms what model actually saw
-
-    face_debug_pil = Image.fromarray(face_crop).resize((112, 112))
-    buf = BytesIO()
-    face_debug_pil.save(buf, format="JPEG", quality=70)
-    face_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
 def _save_gradcam(overlay: np.ndarray, prefix: str = "gradcam") -> str | None:
     output_dir = getattr(settings, "GRADCAM_OUTPUT_DIR", None)
@@ -120,8 +113,6 @@ def _save_gradcam(overlay: np.ndarray, prefix: str = "gradcam") -> str | None:
     cv2.imwrite(filepath, cv2.cvtColor(overlay, cv2.COLOR_RGB2BGR))
     return filepath
 
-
-# View 
 
 @api_view(["POST"])
 def predict(request):
@@ -135,7 +126,6 @@ def predict(request):
     if not image_file:
         return Response({"error": "No image uploaded."}, status=400)
 
-    # Load image
     try:
         image   = Image.open(image_file)
         image = ImageOps.exif_transpose(image)
@@ -145,7 +135,6 @@ def predict(request):
             metadata = {"info": "No frorensic metadata available"}
         image = image.convert("RGB")
         img_rgb = np.array(image)
-        # Face detection
         face_crop, face_detected = _detect_and_crop_face(img_rgb)
         log_event("Face detection completed")
         face_pil = Image.fromarray(face_crop)
@@ -170,11 +159,7 @@ def predict(request):
         return Response({"error": f"Invalid image: {str(e)}"}, status=400)
 
 
-
-    # Preprocess — 224×224
     tensor = TRANSFORM(face_pil).unsqueeze(0)
-
-    # Inference + Grad-CAM
     try:
         prediction, probability, overlay, cam = predict_with_gradcam(MODEL, tensor)
         print("CAM  shape:",  cam.shape)
@@ -182,19 +167,10 @@ def predict(request):
     except Exception as e:
         return Response({"error": f"Inference failed: {str(e)}"}, status=500)
 
-    # Debug log
     print(f"[FortifyAI v5] prob={probability:.6f} | pred={prediction} | face={face_detected}")
 
     raw_confidence = probability if prediction == 1 else (1 - probability)
-    confidence     = round(raw_confidence * 100, 1)
-#    if confidence >= 80:
-#        detection_reliability = "HIGH" 
-#    elif confidence >= 60:
-#        detection_reliability = "MEDIUM"
-#    else:
-#        detection_reliability = "LOW CONFIDENCE"
-#    label       = "DEEPFAKE" if prediction == 1 else "AUTHENTIC"
-    
+    confidence     = round(raw_confidence * 100, 1)    
 
     forensic_score = compute_forensic_score(
         confidence,

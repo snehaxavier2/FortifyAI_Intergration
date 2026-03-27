@@ -7,17 +7,14 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# ── Security ──────────────────────────────────────────────────────────────────
-
+# Security 
 SECRET_KEY = 'django-insecure-38^xf0*fg-jt^l=q+szkx&z$k$v--n+17jc*t)&e47-3p-$y*r'
 
 DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
-# ── Applications ──────────────────────────────────────────────────────────────
+# Applications 
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -64,7 +61,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'bestmodel.wsgi.application'
 
 
-# ── Database ──────────────────────────────────────────────────────────────────
+# Database 
 
 DATABASES = {
     'default': {
@@ -74,7 +71,7 @@ DATABASES = {
 }
 
 
-# ── Password validation ───────────────────────────────────────────────────────
+# Password validation 
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -83,16 +80,14 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# ── Internationalisation ──────────────────────────────────────────────────────
+# Internationalisation 
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'UTC'
 USE_I18N      = True
 USE_TZ        = True
 
-
-# ── Static and media files ────────────────────────────────────────────────────
+# Static and media files 
 
 STATIC_URL = 'static/'
 
@@ -100,21 +95,9 @@ STATIC_URL = 'static/'
 MEDIA_URL  = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
-# ── FortifyAI model configuration ─────────────────────────────────────────────
-#
-# CHANGE ONLY THIS LINE per machine — everything else stays the same.
-#
-# Your path (Developer 1):
 FORTIFYAI_CHECKPOINT = r"E:\Fortifyai\checkpoints\best_model.pth"
-#
-# Partner's path (Developer 2) — they set this on their own machine:
-# FORTIFYAI_CHECKPOINT = r"C:\Users\partner\path\to\checkpoints\best_model.pth"
-#
-# Grad-CAM outputs are saved here with timestamp filenames
 GRADCAM_OUTPUT_DIR = os.path.join(MEDIA_ROOT, 'gradcam_outputs')
 
-
-# ── Misc ──────────────────────────────────────────────────────────────────────
+# Misc 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

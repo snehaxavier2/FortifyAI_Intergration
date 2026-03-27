@@ -60,7 +60,7 @@ class HybridModel(nn.Module):
         self.pool        = nn.AdaptiveAvgPool2d((1, 1))
         self.feature_dim = 1536
         self.freq_dim    = 256
-        self.fusion_dim  = self.feature_dim * 2 + self.freq_dim  # 3328
+        self.fusion_dim  = self.feature_dim * 2 + self.freq_dim  
 
         self.freq_branch  = FrequencyBranch(out_dim=self.freq_dim)
         self.se_attention = SEBlock(self.fusion_dim, reduction=se_reduction)
@@ -86,6 +86,6 @@ class HybridModel(nn.Module):
         f_sub  = f_orig - self.extract_features(x_pert)
         f_freq = self.freq_branch(x)
 
-        fusion = torch.cat([f_orig, f_sub, f_freq], dim=1)  # (B, 3328)
+        fusion = torch.cat([f_orig, f_sub, f_freq], dim=1)  
         fusion = self.se_attention(fusion)
         return self.classifier(fusion)

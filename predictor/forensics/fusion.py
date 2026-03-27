@@ -59,11 +59,10 @@ def compute_forensic_score(
     noise_elevated     = noise_norm    > 0.38
     prnu_elevated      = prnu_norm     > 0.018
     landmark_elevated  = landmark_norm > 0.65
-    upsample_elevated  = upsample_norm > 0.25    # new — meaningful now
+    upsample_elevated  = upsample_norm > 0.25   
     gan_signals = sum([noise_elevated, prnu_elevated, 
                        landmark_elevated, upsample_elevated])
     if not has_camera_metadata and gan_signals >= 2:
-        # Two or more discriminative GAN signals agree
         gan_strength = (
             0.40 * noise_norm +
             0.35 * prnu_norm  +
@@ -72,7 +71,6 @@ def compute_forensic_score(
         gan_floor = 0.35 + (0.20 * gan_strength)
         forensic_score = max(forensic_score, gan_floor)
     elif not has_camera_metadata and prnu_elevated and noise_elevated:
-        # Both most reliable signals agree
         gan_floor = 0.33 + (0.15 * noise_norm)
         forensic_score = max(forensic_score, gan_floor)
     
